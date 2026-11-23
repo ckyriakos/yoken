@@ -1,0 +1,26 @@
+# Scenario settings for run_scenarios.py. Everything here is an ASSUMPTION you can change; ranges are sampled per run (seed) and reported as intervals.
+# Budgets are in physical UNITS (metres of street planted, number of refuges opened), not euros: multiply by a unit cost at decision time.
+common:
+  hour: 14                      # local hour; must be one of the hours written by build_shade.py (10, 12, 14, 16)
+  n_agents_per_neighbourhood: 150
+  seeds: 12                     # agent samples and parameter draws; results are mean and 5-95% interval over these
+  beta_range: [1.0, 3.0]        # heat weight in route choice: cost = length * (1 + beta * (1 - shade)); 0 = shortest path
+  walk_speed_m_s: 1.2
+  cutoff_m: 1500                # trips longer than this count as not reached
+scope:
+  top_n: 5                      # the top-N eligible neighbourhoods by priority score (from build_area_types.py) ...
+  neighbourhoods: []            # ... unless you list neighbourhood ids here, e.g. ["athens:nb:033", "athens:nb:137"]
+scenarios:
+  - id: street_trees
+    type: street_trees
+    budget_m: [250, 500, 1000, 2000]          # metres of street treated across the whole scope
+    canopy_gain_range: [0.2, 0.6]             # share of the REMAINING sun a treated street loses (young trees low, mature high)
+    spacing_m: 10
+    kerb_m_per_pit: 6                         # kerb length one tree pit may take; kerb affected is an upper bound
+    min_edge_m: 25
+    max_existing_shade: 0.6
+    allowed_highway: [residential, tertiary, pedestrian, living_street]
+  - id: new_refuges
+    type: new_refuge
+    budget_units: [1, 2, 4, 8]                # number of civic-zoned sites opened as cooling refuges
+    max_candidates: 300

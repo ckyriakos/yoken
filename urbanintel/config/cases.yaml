@@ -1,0 +1,116 @@
+# Case-study settings. Every number here is an ASSUMPTION shown in the demo; change it and rerun `python -m urbanintel.prepare --cases`.
+
+kallimarmaro:
+  title: "Vas. Olgas redevelopment (2026): reopened to traffic + greenery"
+  note: >-
+    Built project: Vas. Olgas between Amalias and Vas. Konstantinou / Arditou (about 0.5 km, 2.3-2.8 ha) was closed from 2020, redeveloped
+    by Anaplasi Dimosion Choron SA, and handed back in April 2026 as a soft-traffic, multimodal street: one lane per direction for cars,
+    buses and the tram, about 150 new trees, 100+ new luminaires, new signals at both ends and a restored U-turn on Amalias. All-vehicle
+    traffic has run as a pilot since May 2026. No measured pilot results are published; the municipality forecast 15-20% decongestion
+    of the area. Car demand here is synthetic (population and attractor based), not counts.
+  sources:
+    - https://www.kathimerini.gr/society/564165649/vasilissis-olgas-anoigei-exi-chronia-meta/
+    - https://www.cityofathens.gr/deltio-typoy/charis-doukas-oi-ergasies-sti-vasilissis-olgas-epitelous-oloklirothikan/
+    - https://anaplassis.gr/featured_item/ergo-leoforos-vasilissis-olgas/
+    - https://hellasjournal.com/2026/04/etoimi-i-vasilissis-olgas-oloklirothike-i-anaplasi-epistrefoun-kai-ta-mesa-mazikis-metaforas-tha-ferei-aposymforisi-eos-20-sto-kykloforiako-videos/
+    - https://opencouncil.gr/athens/sep23_2026/subjects/cmuft0jlc0k1mwysp1g2cr8gj
+  forecast_decongestion_pct: [15, 20]   # municipality's pre-opening forecast (not a measurement)
+  centre_latlon: [37.9685, 23.7411]
+  radius_m: 1600              # OSM network download radius
+  ped_radius_m: 1100          # residents within this distance are pedestrian agents
+  road_name: "Βασιλίσσης Όλγας"
+  tree_streets: ["Βασιλίσσης Όλγας"]
+  tree_count: 150
+  tree_canopy_gain: 0.25      # share of remaining sun removed by the 2026 plantings (young trees; ASSUMPTION)
+  reopened:                   # Vas. Olgas as built: 1 lane per direction (OSM already has one carriageway per direction)
+    capacity_vph_per_lane: 700
+    speed_kmh: 30
+    bus_tram_vph: 30          # buses + tram passages per hour per direction after reopening (ASSUMPTION)
+  new_signal_ends: true       # new signals where Olgas meets Amalias and Vas. Konstantinou / Arditou
+  amalias_uturn:              # restored U-turn on Amalias at Olgas (towards Plaka / Syntagma)
+    point_latlon: [37.9705, 23.7331]
+    search_m: 60
+  corridor_streets: ["Βασιλίσσης Αμαλίας", "Βασιλέως Κωνσταντίνου", "Αρδηττού"]   # the streets the pilot evaluation watches
+  corridor_streets_radius_m: 700
+  scenarios:
+    baseline:     {label: "Before (2020-26): closed to cars", olgas_open: false, trees: false, works: false}
+    as_built:     {label: "As built (2026): open + trees",    olgas_open: true,  trees: true,  works: true}
+    traffic_only: {label: "Traffic only (no trees)",          olgas_open: true,  trees: false, works: true}
+    trees_only:   {label: "Trees only (kept car-free)",       olgas_open: false, trees: true,  works: false}
+  cars:
+    peak_trips_vph: 11000     # vehicle trips with an end or a pass through the study area in the modelled peak hour
+    through_share: 0.45       # share of trips gateway -> gateway (through traffic)
+    corridor_share: 0.15      # share of trips on the debated movement between Pangrati/Mets/Kallimarmaro and Syntagma/Plaka/Makrygianni
+    corridor_reverse_share: 0.5   # of those, the share going the other way (Syntagma/Plaka -> Pangrati); 0.5 = symmetric
+    demand_scale: 1.800         # set by `python -m urbanintel.calibrate` from Attica loop detectors (see calibration.json)
+    n_agents: 1500
+    steps: 12                 # 5-minute steps
+    bpr_alpha: 0.15
+    bpr_power: 4
+    signal_delay_s: 12        # extra mean delay on approaches to a signalised junction
+  pedestrians:
+    n_agents: 2500
+    speed_m_s: 1.25
+    beta_sun: 1.5             # sun aversion in route choice
+    crossing_need: 0.5        # share of junctions on a route where the pedestrian actually crosses a road
+    signal_cycle_s: 90
+    ped_green_s: 25
+    lane_width_m: 3.3
+    cutoff_min: 20
+  destinations:               # lat, lon points (metro stations, squares) in addition to parks and bus stops
+    metro: [[37.9755, 23.7348], [37.9687, 23.7296], [37.9763, 23.7470]]      # Syntagma, Akropoli, Evangelismos
+    stadium: [[37.9684, 23.7409]]
+  national_garden_names: ["Εθνικός Κήπος", "Κήπος Ζαππείου"]
+  attractors: [[37.9755, 23.7348], [37.9780, 23.7400], [37.9690, 23.7480], [37.9660, 23.7290], [37.9735, 23.7300], [37.9690, 23.7320]]
+  # Syntagma, Kolonaki, Pangrati, Koukaki, Plaka, Makrygianni
+  corridor:
+    origins: [[37.9690, 23.7480], [37.9660, 23.7420], [37.9700, 23.7395]]       # Pangrati, Mets, Kallimarmaro
+    destinations: [[37.9755, 23.7348], [37.9735, 23.7300], [37.9690, 23.7320]]  # Syntagma, Plaka, Makrygianni
+    radius_m: 350             # origins/destinations are drivable nodes within this distance of each point
+  corridor_residents_m: 400   # residents within this distance of Vas. Olgas form the 'corridor' subgroup
+  seeds: 5
+  calibration:                # loop-detector calibration of car demand (urbanintel/services/traffic.py)
+    max_dist_m: 800           # detectors farther from Olgas sit near the model boundary, where demand is under-represented
+    exclude_desc: ["ΛΕΩΦΟΡΕΙΟΛΩΡΙΔΑ", "ΡΑΜΠΑ", "ΛΩΡΙΔΑ ΑΡΙΣΤΕΡΗΣ", "ΔΕΞΙΑ ΣΤΡΟΦΗ"]   # bus lanes, ramps, turn lanes
+    iterations: 4
+  landcover:                  # Sentinel-2 NDVI change around the project
+    corridor_buffer_m: 25     # project area ~ 0.5 km x 50 m
+    control_ring_m: [60, 400] # control pixels: this ring around the corridor (same years, same scenes)
+    resolution_m: 10
+    months: [6, 7, 8, 9]      # same season every year, so phenology cancels out
+    max_cloud_pct: 20
+    max_scenes: 6
+    periods:
+      pre_works: 2019         # before the 2020 closure
+      works: 2025             # during construction
+      after: 2026             # first summer after the April 2026 planting
+    thresholds: {tree: 0.35, grass: 0.15}   # same NDVI class thresholds as lulc.yaml (set 'low')
+
+heat:
+  title: "Heat: proposed street trees and cooling refuges, simulated"
+  top_n: 3                    # top-N priority neighbourhoods (or list ids below)
+  neighbourhoods: []
+  hour: 14
+  n_agents_per_neighbourhood: 300
+  seeds: 6
+  beta_range: [1.0, 3.0]
+  walk_speed_m_s: 1.2
+  vulnerable_share: 0.23      # ELSTAT 2021: ~23% of Athens residents are 65+ (ASSUMPTION if not refreshed)
+  vulnerable_speed_m_s: 0.9
+  heat_threshold_min: 8       # exposure-weighted minutes per trip treated as a high dose (ASSUMPTION; no clinical threshold for walking trips)
+  cutoff_m: 1500
+  street_width_share: 0.3     # share of a 30 m LST pixel a treated street's canopy covers
+  tree_lst_coef_c: null       # null = read the 'tree' coefficient from lulc_model_coefficients.csv
+  tree_budgets_m: [0, 500, 1000, 2000]
+  refuge_budgets: [0, 2, 4]
+  canopy_gain: 0.45
+  allowed_highway: [residential, tertiary, pedestrian, living_street, secondary]
+
+flood:
+  zones: {flood_50: 50, flood_100: 100, flood_1000: 1000}
+  s2:
+    start: "2026-01-01"
+    end: "2026-04-30"         # wet season: water and soil moisture signal is strongest
+    max_cloud_pct: 15
+    max_scenes: 4
+    resolution_m: 20

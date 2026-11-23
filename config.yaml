@@ -1,0 +1,73 @@
+methodology_version: "0.1.0-exploratory"
+
+aoi_bbox_wgs84: [23.68, 37.93, 23.80, 38.05]   # Athens municipality, with margin
+
+gis:
+  neighbourhoods_path: data/raw/gis/athens_neighbourhoods.geojson
+  name_field: name     # adjust to the GeoNode layer's real field names
+  district_field: dk
+  id_field: id
+
+paths:
+  raw: data/raw
+  out: data/outputs
+
+# Landsat scene -> chosen Sentinel-2 scene (nearest in time, from STAC search).
+# lag_days = S2 date minus Landsat date. 'role' controls how the scene is used.
+scenes:
+  - landsat: LC09_L2SP_183034_20260629_02_T1
+    s2: S2C_MSIL2A_20260628T090551_R050_T35SKC_20260628T123215
+    lag_days: -0.6
+    role: optional
+  - landsat: LC09_L2SP_183034_20260715_02_T1
+    s2: S2B_MSIL2A_20260713T090549_R050_T35SKC_20260713T113148
+    lag_days: -1.6
+    role: core
+  - landsat: LC09_L2SP_183034_20260731_02_T1
+    s2: S2A_MSIL2A_20260730T091331_R050_T35SKC_20260730T153514
+    lag_days: -0.6
+    role: core
+  - landsat: LC08_L2SP_183034_20260808_02_T1
+    s2: S2C_MSIL2A_20260807T090551_R050_T35SKC_20260807T124807
+    lag_days: -0.6
+    role: core
+  - landsat: LC09_L2SP_183034_20260816_02_T1
+    s2: S2C_MSIL2A_20260817T090551_R050_T35SKC_20260817T124254
+    lag_days: 1.4
+    role: ranking_only        # 0 stations reporting at overpass -> no sensor validation
+  - landsat: LC08_L2SP_183034_20260824_02_T1
+    s2: S2B_MSIL2A_20260822T090549_R050_T35SKC_20260822T113207
+    lag_days: -1.6
+    role: core
+  - landsat: LC09_L2SP_183034_20260901_02_T1
+    s2: S2B_MSIL2A_20260901T090549_R050_T35SKC_20260901T113204
+    lag_days: 0.4
+    role: core
+
+composite:
+  roles_used: [core, ranking_only, optional]
+  min_valid_scenes: 3          # pixel needs >= this many valid scenes
+
+eligibility:
+  min_pixels: 20               # 30 m pixels per neighbourhood
+  min_blocks: 4                # independent spatial blocks (see block_px)
+  min_coverage_pct: 90
+
+uncertainty:
+  block_px: 4                  # 4 px * 30 m = 120 m ~ native thermal pixel (100 m)
+  n_boot: 1000
+  seed: 42
+  weight_heat_range: [0.5, 0.7]   # heat weight drawn uniformly per replicate
+  ci: [5, 95]
+
+scoring:
+  weight_heat: 0.6
+  normalisation: minmax        # minmax | robust (p5-p95)
+
+hotspots:
+  radius_px: 3                 # kernel radius for Getis-Ord Gi*
+  q: 0.05                      # Benjamini-Hochberg false discovery rate
+
+context:
+  buildings_path: data/raw/gis/solar_efficiency.geojson
+  large_roof_m2: 500

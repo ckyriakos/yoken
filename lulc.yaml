@@ -1,0 +1,97 @@
+# Land-cover change what-if: planting and a new road near Kallimarmaro (Panathenaic Stadium).
+# Run order: build_data.py (LST composite) -> build_population.py (+calibrate) -> build_lulc.py -> run_lulc_scenarios.py
+# Nothing here is a cost: budgets are hectares of planting or metres of street; the municipality can attach prices later.
+
+study:
+  centre_lonlat: [23.7411, 37.9685]   # Panathenaic Stadium (Kallimarmaro), WGS84 lon, lat
+  zone_radius_m: 900                  # results are computed inside this circle
+  siting_radius_m: 600                # planting is sited (and placeholder roads should lie) inside this circle
+  window_margin_m: 300                # extra margin so 90 m smoothing is valid at the zone edge
+  street_half_width_m: 4.0            # streets are masked out of "open land" with this half-width
+
+classes:
+  base_set: base
+  building_min_cover: 0.5             # a 10 m cell is "building" if footprints cover at least this share
+  sets:                               # NDVI thresholds are ASSUMPTIONS. Look at lulc_quality.json (NDVI percentiles per
+    low:  {tree: 0.35, grass: 0.15}   # class and the zoning cross-check) and adjust. Every set is run and pooled.
+    base: {tree: 0.40, grass: 0.20}
+    high: {tree: 0.45, grass: 0.25}
+
+model:
+  focal_px: 3                         # 3 x 30 m = 90 m neighbourhood, close to the 100 m thermal footprint
+  block_px: 10                        # bootstrap blocks (300 m)
+  cv_block_px: 33                     # cross-validation blocks (about 1 km)
+  n_boot: 120                         # draws per (threshold set, fit scope)
+  local_fit_radius_m: 2000            # second fit scope: only pixels this close to the centre
+  seed: 42
+
+# Each scenario is a list of edits (applied in order) repeated for each value of `sweep`.
+# canopy_fraction_range = share of an edited 10 m cell that really becomes canopy (mature crowns); drawn per replicate.
+scenarios:
+  plant_open_land:
+    label: Plant open land (plazas, lots, bare plots)
+    sweep: {param: budget_ha, values: [0.25, 0.5, 1.0, 2.0]}
+    ops:
+      - {type: plant, mode: open_land, canopy_fraction_range: [0.4, 0.8], min_patch_px: 3}
+  plant_street_trees:
+    label: Plant street trees (kerb canopy over the carriageway)
+    sweep: {param: budget_m, values: [250, 500, 1000, 2000]}
+    ops:
+      - {type: plant, mode: street, canopy_fraction_range: [0.2, 0.5], half_width_m: 4.0,
+         allowed_highway: [residential, tertiary, secondary, primary, unclassified, pedestrian, living_street]}
+  new_road_open:
+    label: New road, no demolition (takes trees and grass only)
+    sweep: {param: width_m, values: [10, 16, 24]}
+    ops:
+      - {type: road, alignment: placeholder, demolish_buildings: false}
+  new_road_cut_through:
+    label: New road cutting through buildings (demolition)
+    sweep: {param: width_m, values: [10, 16, 24]}
+    ops:
+      - {type: road, alignment: placeholder, demolish_buildings: true}
+  new_road_tree_lined:
+    label: New road with a tree verge on both sides
+    sweep: {param: width_m, values: [10, 16, 24]}
+    ops:
+      - {type: road, alignment: placeholder, demolish_buildings: false, verge_trees_m: 3.0, verge_canopy_range: [0.3, 0.6]}
+
+  convert_lot_to_green:
+    label: Convert a plot to green space (any land-cover change inside a polygon)
+    sweep: {param: to, values: [grass, tree]}
+    ops:
+      - {type: reclass, polygon: placeholder_plot, from: [ground], amount_range: [0.6, 1.0]}
+# PLACEHOLDER alignment: a straight 400 m line a few blocks south-east of the stadium. It is NOT a real project.
+# Replace coords_lonlat with the real alignment (draw it on geojson.io, copy the lon,lat pairs), or set geojson_path to a
+# LineString file in any CRS. Results for the placeholder only show what the tool does.
+alignments:
+  placeholder:
+    label: PLACEHOLDER alignment (replace with the real one)
+    coords_lonlat: [[23.7385, 37.9650], [23.7432, 37.9647]]
+    # geojson_path: data/raw/gis/my_road.geojson
+
+# PLACEHOLDER plot (about 100 m x 100 m, a few blocks east of the stadium) for the generic land-cover change scenario.
+# A reclass edit turns everything inside the polygon (or only the classes in `from: [ground, grass]`) into the class `to`
+# (ground | tree | grass | building). Use it for a new park, a plaza paved over, a new development, etc.
+polygons:
+  placeholder_plot:
+    label: PLACEHOLDER plot (replace with the real one)
+    coords_lonlat: [[23.7440, 37.9660], [23.7454, 37.9660], [23.7454, 37.9669], [23.7440, 37.9669]]
+    # geojson_path: data/raw/gis/my_plot.geojson
+# Where the land cover comes from, which spectral indices, which features and how classes are decided. The app's land-cover tab can rebuild with
+# other choices without editing this file. Defaults reproduce the original behaviour (local red/NIR files, hand-set NDVI cut-offs below).
+data:
+  source: local                       # local = Sentinel-2 files already in data/raw/s2 (NDVI only) | live = search and fetch now (STAC)
+  indices: [ndvi]                     # live only: ndvi savi evi ndbi mndwi ndwi bsi nbr2 albedo brightness (see pipeline/indices.py)
+  features: indices                   # indices | embeddings | both (embeddings need classifier.method: calibrated)
+  live: {year: 2026, months: [6, 7, 8, 9], max_cloud_pct: 20, max_scenes: 8, min_valid_scenes: 3}
+  embeddings: {year: 2025, paths: []} # AlphaEarth annual embeddings; paths = your own local/remote files instead of automatic discovery
+  classifier:
+    method: rules                     # rules = NDVI cut-offs in `classes.sets` | calibrated = classifier fitted to reference labels
+    calibrated:
+      reference: [worldcover]         # worldcover and/or labels
+      worldcover_year: 2021           # 2020 or 2021
+      # worldcover_path: data/raw/gis/worldcover.tif   # a local copy instead of fetching
+      # labels_path: data/raw/gis/my_labels.geojson     # points or polygons with a `class` column: ground | tree | grass | building
+      n_per_class: 4000
+      cv_block_m: 600
+      tau: {low: 0.35, base: 0.5, high: 0.65}           # probability thresholds for the low/base/high sets (low = more vegetation)

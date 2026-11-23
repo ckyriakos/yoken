@@ -1,0 +1,24 @@
+# Maps zoned land-use labels to broad area types. FIRST MATCHING RULE WINS, so order matters.
+# Matching ignores case, accents and Greek/Latin look-alike letters. Labels are tried on `ypomnima` first, then `xriseis`.
+# Greek meanings are the project's reading and need confirmation by municipal staff. Anything unmatched becomes "other".
+classes:
+  special_zone:      "Special-regulation zone (Elaionas)"
+  industrial_craft:  "Industrial / craft park"
+  green_open:        "Green and open space"
+  public_paved:      "Pedestrian street / paved public space"
+  civic:             "Civic and institutional (education, health, welfare, sports, transit)"
+  central_commercial: "Central commercial"
+  local_centre:      "Local centre (neighbourhood services)"
+  residential:       "Residential"
+  other:             "Other / unclassified"
+rules:
+  - {class: special_zone,       any: ["ΕΛΑΙΩΝΑΣ"]}
+  - {class: industrial_craft,   any: ["ΒΙΟΠΑ", "ΒΙΠΑ", "ΒΙΟΜΗΧΑΝ", "ΒΙΟΤΕΧΝ"]}
+  - {class: green_open,         any: ["ΠΡΑΣΙΝ", "ΠΡΑΣΙΑ", "ΕΛΕΥΘΕΡΟΙ ΧΩΡΟΙ"]}
+  - {class: public_paved,       any: ["ΠΕΖΟΔΡΟΜ"]}
+  - {class: civic,              any: ["ΕΚΠΑΙΔΕΥΣΗ", "ΣΧΟΛΕΙΟΥ", "ΠΑΝΕΠΙΣΤΗΜΙΟ", "ΠΕΡΙΘΑΛΨΗ", "ΠΡΟΝΟΙΑ", "ΚΟΙΝΩΝΙΚΕΣ ΕΞΥΠΗΡΕΤΗΣΕΙΣ",
+                                      "ΚΟΙΝΩΦΕΛΩΝ", "ΘΡΗΣΚΕΥΤΙΚ", "ΒΡΕΦΟΝΗΠΙΑΚ", "ΑΘΛΗΤΙΣΜΟΣ", "ΜΑΖΙΚΩΝ ΜΕΤΑΦΟΡΩΝ"]}
+  # central centres must come before local_centre: "ΥΠΕΡΤΟΠΙΚΟ ΚΕΝΤΡΟ" contains the text "ΤΟΠΙΚΟ ΚΕΝΤΡΟ"
+  - {class: central_commercial, any: ["ΚΕΝΤΡΟ ΔΗΜΟΥ", "ΥΠΕΡΤΟΠΙΚΟ", "ΕΜΠΟΡΙΚΟ ΤΡΙΓΩΝΟ", "ΠΟΛΕΟΔΟΜΙΚΟ ΚΕΝΤΡΟ", "ΠΟΛ.ΚΕΝΤΡΟ"]}
+  - {class: local_centre,       any: ["ΤΟΠΙΚΟ ΚΕΝΤΡΟ"]}
+  - {class: residential,        any: ["ΚΑΤΟΙΚΙΑ", "ΓΚ("]}

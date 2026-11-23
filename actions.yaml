@@ -1,0 +1,100 @@
+# Candidate actions per area type and heat/vegetation tier.  These are OPTIONS TO EVALUATE, not recommendations.
+# No effect sizes and no costs are stored here: effects come from the scenario engine / ABM, costs are entered by the user.
+# Tiers (tertiles of P90 LST and mean NDVI across eligible neighbourhoods): heat_tier high|mid|low, veg_tier low|mid|high.
+# A neighbourhood gets every action whose conditions ALL hold. `abm` says which lever and metrics a simulation would use.
+# `needs` lists data that is NOT in the project yet; `caveats` lists known ways the action can disappoint or backfire.
+actions:
+  - id: street_trees
+    label: "Street trees and planting strips"
+    mechanism: "Shade and evapotranspiration along walking routes"
+    when:
+      - {col: area_type, op: in, value: [dense_residential, residential, commercial_centre, civic_institutional, mixed]}
+      - {col: heat_tier, op: in, value: [high, mid]}
+      - {col: veg_tier, op: in, value: [low, mid]}
+    abm: {lever: "shade along streets", metrics: [shaded_route_share, detour_ratio], side_effects: [parking_spaces_displaced]}
+    needs: ["Pavement and street width", "Underground utilities", "Existing tree inventory"]
+    caveats: ["Young trees give little shade for years", "Narrow streets may not fit trees without losing parking or sidewalk width"]
+  - id: shade_structures
+    label: "Shade structures at stops, plazas and school yards"
+    mechanism: "Immediate shade at places where people wait or gather"
+    when:
+      - {col: area_type, op: in, value: [commercial_centre, civic_institutional, dense_residential, mixed]}
+      - {col: heat_tier, op: in, value: [high]}
+    abm: {lever: "shade at destinations and stops", metrics: [shaded_wait_share, shaded_route_share], side_effects: [sidewalk_width_blocked]}
+    needs: ["Locations of transit stops and public squares"]
+    caveats: ["Shade cuts sun, not surface or air heat", "Maintenance and vandalism"]
+  - id: cool_roofs
+    label: "Cool (reflective) roofs on large roofs"
+    mechanism: "Lower roof surface temperature; reduces heat entering buildings"
+    when:
+      - {col: area_type, op: in, value: [industrial_logistics, industrial_zoned_unconfirmed, civic_institutional, commercial_centre]}
+      - {col: large_roof_cover_pct, op: ">=", q: 0.5}
+      - {col: heat_tier, op: in, value: [high, mid]}
+    abm: {lever: "roof surface temperature (no pedestrian effect)", metrics: [roof_area_treated_m2], side_effects: []}
+    needs: ["Roof condition, structure and ownership", "Whether roofs already carry PV or equipment"]
+    caveats: ["Little effect on street-level pedestrians", "Roof access and ownership are mostly private"]
+  - id: depave_and_green
+    label: "De-paving and greening yards, lots and car parks"
+    mechanism: "Replace sealed surfaces with planting or permeable cover"
+    when:
+      - {col: area_type, op: in, value: [industrial_logistics, industrial_zoned_unconfirmed, dense_residential, commercial_centre, mixed]}
+      - {col: heat_tier, op: in, value: [high]}
+      - {col: veg_tier, op: in, value: [low]}
+    abm: {lever: "vegetated area and shade", metrics: [shaded_route_share], side_effects: [parking_spaces_displaced, vehicle_access_changed]}
+    needs: ["Parcel ownership and use of open areas", "Parking supply and occupancy"]
+    caveats: ["Parking supply and occupancy are not in the data, so displaced parking can only be counted, not judged"]
+  - id: pocket_parks
+    label: "Pocket parks on vacant or underused plots"
+    mechanism: "New vegetated refuge close to homes"
+    when:
+      - {col: area_type, op: in, value: [dense_residential, residential, commercial_centre, mixed]}
+      - {col: heat_tier, op: in, value: [high]}
+      - {col: veg_tier, op: in, value: [low]}
+    abm: {lever: "new green destination", metrics: [walk_time_to_green, population_within_5min], side_effects: []}
+    needs: ["Vacant or municipal plots", "Resident population by small area (ELSTAT)"]
+    caveats: ["Land availability is the main constraint and is not in the data"]
+  - id: pedestrian_priority
+    label: "Pedestrian-priority streets with greening"
+    mechanism: "Reduce vehicle space; add shade, planting and lighter surfaces"
+    when:
+      - {col: area_type, op: in, value: [commercial_centre, dense_residential]}
+      - {col: heat_tier, op: in, value: [high, mid]}
+    abm: {lever: "street conversion", metrics: [shaded_route_share, detour_ratio, vehicle_access_changed], side_effects: [parking_spaces_displaced, delivery_access, bus_route_changes]}
+    needs: ["Traffic and bus routes", "Parking supply", "Delivery needs"]
+    caveats: ["Traffic can shift to neighbouring streets", "Business and resident acceptance"]
+  - id: cooling_refuges
+    label: "Cooling refuges and drinking-water points"
+    mechanism: "Open air-conditioned public buildings and add water points at walking distance"
+    when:
+      - {col: area_type, op: in, value: [civic_institutional, commercial_centre, dense_residential, residential, mixed]}
+      - {col: heat_tier, op: in, value: [high]}
+    abm: {lever: "refuge locations and opening hours", metrics: [walk_time_to_refuge, population_within_5min], side_effects: []}
+    needs: ["Which civic buildings can open and when", "Staffing and operating budget", "Resident population by small area"]
+    caveats: ["Reach depends on awareness and opening hours, not only distance"]
+  - id: cool_pavement
+    label: "Cool (reflective) paving on plazas and pedestrian areas"
+    mechanism: "Lower pavement surface temperature"
+    when:
+      - {col: area_type, op: in, value: [commercial_centre, civic_institutional]}
+      - {col: heat_tier, op: in, value: [high]}
+      - {col: veg_tier, op: in, value: [low]}
+    abm: {lever: "pavement surface temperature", metrics: [surface_heat_context_index], side_effects: []}
+    needs: ["Pavement material and area"]
+    caveats: ["Reflected sunlight can raise the radiant load on pedestrians; pair with shade"]
+  - id: park_canopy
+    label: "Park canopy, irrigation and cool-pocket upgrades"
+    mechanism: "Keep or raise the cooling that parks provide"
+    when:
+      - {col: area_type, op: in, value: [green_open_space]}
+      - {col: heat_tier, op: in, value: [high, mid]}
+    abm: {lever: "park quality and access", metrics: [walk_time_to_green, population_within_5min], side_effects: []}
+    needs: ["Irrigation water supply", "Park entrances and opening hours"]
+    caveats: ["A hot reading may reflect bare ground, gravel or an archaeological site rather than a poorly kept park"]
+  - id: field_check
+    label: "Field check of actual land use before choosing an action"
+    mechanism: "Confirm what is on the ground"
+    when:
+      - {col: area_type, op: in, value: [insufficient_zoning_data, unclassified_zoning, industrial_zoned_unconfirmed]}
+    abm: {lever: "none", metrics: [], side_effects: []}
+    needs: ["Site visit or recent aerial imagery"]
+    caveats: ["Zoning is planned use and can differ from what is built"]

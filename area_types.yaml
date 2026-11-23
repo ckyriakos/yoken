@@ -1,0 +1,57 @@
+# Area-type rules. FIRST MATCHING RULE WINS (top to bottom). Edit freely; the audit page shows this file.
+# Each condition: {col, op, value}  or  {col, op, q}  where q is a quantile (0-1) of that column across neighbourhoods
+# that have a value (so thresholds follow the Athens distribution and do not rely on guessed absolute numbers).
+# ops: >= <= > < == in
+# Derived columns: lu_industrial_special_pct = industrial_craft + special_zone ; lu_centre_pct = central_commercial + local_centre
+# Zoning is PLANNED use, not observed use. Built-form conditions (roofs, cover) are what make a type "confirmed".
+rules:
+  - id: T0
+    type: insufficient_zoning_data
+    label: "Insufficient zoning data"
+    when: [{col: zoned_pct_of_area, op: "<", value: 30}]
+    why: "Less than 30% of the neighbourhood is covered by zoning polygons, so land-use shares are unreliable."
+  - id: T1
+    type: green_open_space
+    label: "Green / open space"
+    when: [{col: lu_green_open_pct, op: ">=", value: 50}]
+    why: "Half or more of the zoned area is zoned as green or open space."
+  - id: T2
+    type: industrial_logistics
+    label: "Industrial / logistics (built form confirms)"
+    when: [{col: lu_industrial_special_pct, op: ">=", value: 30}, {col: large_roof_cover_pct, op: ">=", q: 0.75}]
+    why: "At least 30% is zoned industrial/craft or Elaionas special zone AND large-roof cover is in the top quarter of Athens."
+  - id: T3
+    type: industrial_zoned_unconfirmed
+    label: "Zoned industrial / special (built form not confirmed)"
+    when: [{col: lu_industrial_special_pct, op: ">=", value: 30}]
+    why: "At least 30% is zoned industrial/craft or Elaionas special zone, but large-roof cover does not confirm industrial built form."
+  - id: T4
+    type: civic_institutional
+    label: "Civic / institutional"
+    when: [{col: lu_civic_pct, op: ">=", value: 40}]
+    why: "40% or more of the zoned area is education, health, welfare, sport, religious or transit use."
+  - id: T5
+    type: commercial_centre
+    label: "Commercial / local centre"
+    when: [{col: lu_centre_pct, op: ">=", value: 40}]
+    why: "40% or more of the zoned area is central commercial or local-centre zoning."
+  - id: T6
+    type: dense_residential
+    label: "Dense residential"
+    when: [{col: lu_residential_pct, op: ">=", value: 60}, {col: building_cover_pct, op: ">=", q: 0.75}]
+    why: "60% or more is residential zoning AND building cover is in the top quarter of Athens."
+  - id: T7
+    type: residential
+    label: "Residential"
+    when: [{col: lu_residential_pct, op: ">=", value: 60}]
+    why: "60% or more of the zoned area is residential zoning."
+  - id: T8
+    type: unclassified_zoning
+    label: "Unclassified zoning"
+    when: [{col: lu_other_pct, op: ">=", value: 50}]
+    why: "Half or more of the zoned area has a legend label that has not been mapped to an area type."
+  - id: T9
+    type: mixed
+    label: "Mixed use"
+    when: []
+    why: "No single zoned type reaches its threshold."

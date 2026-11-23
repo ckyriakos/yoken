@@ -1,0 +1,13 @@
+numpy
+scipy
+pandas
+geopandas
+shapely
+rasterio
+pyyaml
+pyarrow
+pystac-client
+planetary-computer
+pytest
+streamlit
+plotly

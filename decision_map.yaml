@@ -1,0 +1,51 @@
+# Which evidence in this platform bears on each candidate action (ids match actions.yaml).
+# status: tested       = a scenario simulates this action's lever directly
+#         proxy        = a scenario simulates something close; read the note before using it
+#         not_testable = nothing here can estimate the effect yet; the reason says what is missing
+# scenario: id from scenarios.yaml (walking-trip simulation, results per neighbourhood in scenario_by_neighbourhood.csv)
+# lulc: id from lulc.yaml (land-cover what-if; zone-wide results, NOT per neighbourhood)
+# headline: the metric read first for this action (sun_min = minutes in the sun per walking trip; within5_pct = people within 5 min of a destination)
+actions:
+  street_trees:
+    status: tested
+    scenario: street_trees
+    trips: [park, bus_stop]
+    headline: sun_min
+    lulc: [plant_street_trees]
+    note: "Shade on routes to parks and bus stops, buildings-only baseline. Mature canopy; young trees give less. Surface-cooling effect of the canopy is in the land-cover tab."
+  cooling_refuges:
+    status: tested
+    scenario: new_refuges
+    trips: [park]
+    headline: within5_pct
+    note: "Opens civic-zoned sites as cooling destinations. Reach depends on opening hours and awareness, which are not modelled."
+  pocket_parks:
+    status: proxy
+    scenario: new_refuges
+    trips: [park]
+    headline: within5_pct
+    lulc: [plant_open_land, convert_lot_to_green]
+    note: "A new refuge site stands in for a new green destination (same access effect, no land-availability check). The land-cover tab gives the surface-cooling side for a plot."
+  depave_and_green:
+    status: proxy
+    lulc: [convert_lot_to_green, plant_open_land]
+    note: "Land-cover tab only: change in land surface temperature over the edited area. Parking displaced can be counted, not judged (no parking data)."
+  park_canopy:
+    status: proxy
+    lulc: [plant_open_land]
+    note: "Access to parks is a baseline in the access map; the canopy effect is from the land-cover tab."
+  pedestrian_priority:
+    status: not_testable
+    reason: "Needs traffic, bus-route, parking and delivery data, and a model of traffic moving to nearby streets. The walking graph cannot remove vehicle lanes."
+  shade_structures:
+    status: not_testable
+    reason: "Needs stop and plaza locations with waiting times; the simulation counts walking, not waiting."
+  cool_roofs:
+    status: not_testable
+    reason: "Roof temperature does not enter the pedestrian simulation. Roof ownership and condition are not in the data."
+  cool_pavement:
+    status: not_testable
+    reason: "Pavement material and area are not in the data, and reflected radiation on people is not modelled."
+  field_check:
+    status: none
+    reason: "Not an intervention: confirm land use on the ground first."
